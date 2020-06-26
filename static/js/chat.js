@@ -10,17 +10,27 @@ const name = prompt("Username?");
 
 /** called when connection opens, sends join info to server. */
 
-ws.onopen = function(evt) {
+ws.onopen = function (evt) {
   console.log("open", evt);
 
-  let data = {type: "join", name: name};
+  let data = { type: "join", name: name };
   ws.send(JSON.stringify(data));
 };
 
+// Approach
+
+// You could do this by:
+
+// change client-side chat.js to recognize the /joke 
+// command and send a different type of message to server, like 
+// {type: "get-joke"}. Have the ChatUser method that handles 
+// messages call out to a new method that gets a joke. It could 
+// return a response to the client, like {type: "chat", text: "What 
+// do you call eight hobbits? A hob-byte! ", name: "Server"}
 
 /** called when msg received from server; displays it. */
 
-ws.onmessage = function(evt) {
+ws.onmessage = async function (evt) {
   console.log("message", evt);
 
   let msg = JSON.parse(evt.data);
@@ -31,7 +41,14 @@ ws.onmessage = function(evt) {
   }
 
   else if (msg.type === "chat") {
-    item = $(`<li><b>${msg.name}: </b>${msg.text}</li>`);
+    if (msg.text === "/joke") {
+      let response = await $.getJSON("http://icanhazdadjoke.com");
+      console.log("RESPONSE========", response)
+      item = $(`<li>${response.joke}</li>`);
+    }
+    else {
+      item = $(`<li><b>${msg.name}: </b>${msg.text}</li>`);
+    }
   }
 
   else {
@@ -61,9 +78,8 @@ ws.onclose = function (evt) {
 $('form').submit(function (evt) {
   evt.preventDefault();
 
-  let data = {type: "chat", text: $("#m").val()};
+  let data = { type: "chat", text: $("#m").val() };
   ws.send(JSON.stringify(data));
 
   $('#m').val('');
 });
-
